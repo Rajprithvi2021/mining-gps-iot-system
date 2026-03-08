@@ -4,6 +4,7 @@ import 'leaflet/dist/leaflet.css';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { FiMap, FiActivity, FiAlertTriangle, FiTrendingUp, FiZap, FiNavigation, FiTruck, FiDownload } from 'react-icons/fi';
 import { MapContainer } from './components/MapContainer';
+import { VehicleComparison } from './components/VehicleComparison';
 
 const API_BASE = 'http://localhost:5000/api/v1';
 
@@ -1197,6 +1198,9 @@ function App() {
         {/* ANALYTICS TAB */}
         {activeTab === 'analytics' && (
           <div className="space-y-6">
+            {/* Vehicle Comparison Dashboard */}
+            <VehicleComparison />
+
             {/* Key Metrics */}
             <div className="grid grid-cols-4 gap-4">
               {[

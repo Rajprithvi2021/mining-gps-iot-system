@@ -5,17 +5,32 @@ const AnalyticsService = require('../services/analytics');
 const AlertService = require('../services/alerts');
 const logger = require('../utils/logger');
 
-// GET /api/v1/analytics - Get analytics overview
+// GET /api/v1/analytics - Get detailed vehicle analytics with comparison
 router.get('/', async (req, res) => {
   try {
-    // Get analytics from PostgreSQL
+    // Get detailed vehicle analytics from PostgreSQL
     const vehiclesResult = await pool.query(
-      `SELECT COUNT(*) as total_vehicles,
-              COUNT(CASE WHEN active = true THEN 1 END) as active,
-              AVG(current_speed_kmh) as avg_speed,
-              AVG(efficiency_rating) as avg_efficiency,
-              AVG(fuel_percentage) as avg_fuel
-       FROM vehicles`
+      `SELECT 
+        v.id,
+        v.name as vehicle_name,
+        v.type,
+        v.current_latitude,
+        v.current_longitude,
+        v.current_speed_kmh as speed_kmh,
+        v.fuel_percentage,
+        v.temp_celsius,
+        v.efficiency_rating,
+        v.active,
+        v.status,
+        COUNT(CASE WHEN a.severity = 'critical' THEN 1 END) as critical_alerts,
+        COUNT(CASE WHEN a.severity = 'high' THEN 1 END) as high_alerts,
+        COUNT(a.id) as total_alerts
+       FROM vehicles v
+       LEFT JOIN alerts a ON v.id = a.vehicle_id AND a.resolved = false
+       GROUP BY v.id, v.name, v.type, v.current_latitude, v.current_longitude, 
+                v.current_speed_kmh, v.fuel_percentage, v.temp_celsius, v.efficiency_rating,
+                v.active, v.status
+       ORDER BY v.id`
     );
     
     const alertsResult = await pool.query(
@@ -25,25 +40,61 @@ router.get('/', async (req, res) => {
        FROM alerts`
     );
     
-    const vehicleStats = vehiclesResult.rows[0];
+    // Calculate fleet summary
+    const vehicles = vehiclesResult.rows;
+    const totalVehicles = vehicles.length;
+    const activeVehicles = vehicles.filter(v => v.active).length;
+    const avgSpeed = vehicles.length > 0 
+      ? (vehicles.reduce((sum, v) => sum + (v.speed_kmh || 0), 0) / vehicles.length).toFixed(2)
+      : 0;
+    const avgEfficiency = vehicles.length > 0
+      ? (vehicles.reduce((sum, v) => sum + (v.efficiency_rating || 0), 0) / vehicles.length).toFixed(2)
+      : 0;
+    const avgFuelLevel = vehicles.length > 0
+      ? (vehicles.reduce((sum, v) => sum + (v.fuel_percentage || 0), 0) / vehicles.length).toFixed(2)
+      : 0;
+    
     const alertStats = alertsResult.rows[0];
     
     res.json({
       success: true,
       data: {
-        fleet: {
-          totalVehicles: parseInt(vehicleStats.total_vehicles) || 5,
-          activeVehicles: parseInt(vehicleStats.active) || 4,
-          avgSpeed: parseFloat(vehicleStats.avg_speed) || 28,
-          avgEfficiency: parseFloat(vehicleStats.avg_efficiency) || 8.5,
-          avgFuelLevel: parseFloat(vehicleStats.avg_fuel) || 62.5
+        fleet_summary: {
+          totalVehicles,
+          activeVehicles,
+          avgSpeed: parseFloat(avgSpeed),
+          avgEfficiency: parseFloat(avgEfficiency),
+          avgFuelLevel: parseFloat(avgFuelLevel),
+          lastUpdate: new Date().toISOString()
         },
         alerts: {
-          total: parseInt(alertStats.total_alerts) || 4,
-          unresolved: parseInt(alertStats.unresolved_alerts) || 3,
-          critical: parseInt(alertStats.critical_alerts) || 1
+          total: parseInt(alertStats.total_alerts) || 0,
+          unresolved: parseInt(alertStats.unresolved_alerts) || 0,
+          critical: parseInt(alertStats.critical_alerts) || 0
         },
-        lastUpdate: new Date().toISOString()
+        vehicle_comparison: vehicles.map(v => ({
+          id: v.id,
+          name: v.vehicle_name,
+          type: v.type,
+          status: v.status,
+          active: v.active,
+          location: {
+            latitude: parseFloat(v.current_latitude),
+            longitude: parseFloat(v.current_longitude)
+          },
+          performance: {
+            speed_kmh: parseFloat(v.speed_kmh || 0),
+            fuel_percentage: parseInt(v.fuel_percentage || 0),
+            temperature_celsius: parseFloat(v.temp_celsius || 0),
+            efficiency_rating: parseFloat(v.efficiency_rating || 0)
+          },
+          alerts: {
+            critical: parseInt(v.critical_alerts || 0),
+            high: parseInt(v.high_alerts || 0),
+            total: parseInt(v.total_alerts || 0)
+          },
+          health_score: calculateHealthScore(v)
+        }))
       }
     });
   } catch (error) {
@@ -198,5 +249,35 @@ router.get('/export/csv', async (req, res) => {
     res.status(500).json({ success: false, error: error.message });
   }
 });
+
+// Helper function to calculate vehicle health score
+function calculateHealthScore(vehicle) {
+  let score = 100;
+  
+  // Fuel level (target: 40-80%)
+  if (vehicle.fuel_percentage < 20) score -= 30;
+  else if (vehicle.fuel_percentage < 40) score -= 15;
+  else if (vehicle.fuel_percentage > 95) score -= 5;
+  
+  // Efficiency (target: 7-10 km/L)
+  if (vehicle.efficiency_rating < 6) score -= 25;
+  else if (vehicle.efficiency_rating < 7) score -= 15;
+  else if (vehicle.efficiency_rating > 12) score -= 5;
+  
+  // Speed (target: under 80 km/h)
+  if (vehicle.speed_kmh > 100) score -= 20;
+  else if (vehicle.speed_kmh > 90) score -= 10;
+  
+  // Temperature (optimal: 60-90°C)
+  if (vehicle.temp_celsius > 100) score -= 25;
+  else if (vehicle.temp_celsius > 95) score -= 15;
+  else if (vehicle.temp_celsius < 50) score -= 10;
+  
+  // Alerts
+  score -= (vehicle.critical_alerts || 0) * 20;
+  score -= (vehicle.high_alerts || 0) * 10;
+  
+  return Math.max(0, Math.min(100, Math.round(score)));
+}
 
 module.exports = router;
