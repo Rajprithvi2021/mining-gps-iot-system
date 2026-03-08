@@ -1,0 +1,112 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database with TimescaleDB
+  postgres:
+    image: postgres:16-alpine
+    container_name: skylark_postgres
+    environment:
+      POSTGRES_DB: skylark_drones
+      POSTGRES_PASSWORD: skylark_dev_password
+      POSTGRES_USER: skylark
+      POSTGRES_INITDB_ARGS: "-c shared_preload_libraries=timescaledb"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/scripts/000_init_schema.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U skylark"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: skylark_redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Mosquitto MQTT Broker
+  mosquitto:
+    image: eclipse-mosquitto:2-alpine
+    container_name: skylark_mqtt
+    ports:
+      - "1883:1883"
+      - "8883:8883"
+    volumes:
+      - ./mqtt/config:/mosquitto/config
+      - ./mqtt/data:/mosquitto/data
+      - ./mqtt/log:/mosquitto/log
+    healthcheck:
+      test: ["CMD", "mosquitto_sub", "-h", "localhost", "-t", "test"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: skylark_api
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://skylark:skylark_dev_password@postgres:5432/skylark_drones
+      REDIS_URL: redis://redis:6379
+      MQTT_URL: mqtt://mosquitto:1883
+      JWT_SECRET: ${JWT_SECRET:-backend_jwt_secret_for_development}
+      MAPBOX_TOKEN: ${MAPBOX_TOKEN}
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mosquitto:
+        condition: service_healthy
+    volumes:
+      - ./backend/src:/app/src
+      - ./backend/logs:/app/logs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Frontend React App
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: skylark_frontend
+    environment:
+      REACT_APP_API_URL: http://localhost:3000
+      REACT_APP_GRAPHQL_URL: http://localhost:3000/graphql
+      REACT_APP_MAPBOX_TOKEN: ${MAPBOX_TOKEN}
+    ports:
+      - "3001:3001"
+    depends_on:
+      - api
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3001/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  postgres_data:
+
+networks:
+  default:
+    name: skylark_network

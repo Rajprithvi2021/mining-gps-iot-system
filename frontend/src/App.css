@@ -1,0 +1,133 @@
+/* Modern Enterprise Dark Theme */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(51, 65, 85, 0.1);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.5);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.7);
+}
+
+/* Animations */
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* Utility Classes */
+.animate-slide-in {
+  animation: slideInDown 0.3s ease-out;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out;
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Transitions */
+* {
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  header {
+    padding: 1rem;
+  }
+
+  main {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Focus States */
+button:focus {
+  outline: 2px solid rgb(59, 130, 246);
+  outline-offset: 2px;
+}
+
+/* Gradient Classes */
+.gradient-green {
+  background: linear-gradient(135deg, rgb(34, 197, 94), rgb(20, 83, 45));
+}
+
+.gradient-blue {
+  background: linear-gradient(135deg, rgb(59, 130, 246), rgb(30, 58, 138));
+}
+
+.gradient-red {
+  background: linear-gradient(135deg, rgb(239, 68, 68), rgb(153, 27, 27));
+}
+
+.gradient-orange {
+  background: linear-gradient(135deg, rgb(234, 88, 12), rgb(124, 45, 18));
+}
+
+.gradient-purple {
+  background: linear-gradient(135deg, rgb(168, 85, 247), rgb(88, 28, 135));
+}
+
+.gradient-yellow {
+  background: linear-gradient(135deg, rgb(202, 138, 4), rgb(113, 63, 18));
+}
+

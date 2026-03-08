@@ -1,0 +1,36 @@
+[Unit]
+Description=Skylark Drones GPS Edge Processor
+Documentation=https://github.com/skylark-drones/mining-gps-iot
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=skylark
+Group=skylark
+WorkingDirectory=/opt/skylark-gps
+Environment="PATH=/home/skylark/.venv/bin:/usr/local/bin:/usr/bin:/bin"
+ExecStart=/home/skylark/.venv/bin/python3 /opt/skylark-gps/gps_processor.py
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=skylark-gps
+EnvironmentFile=/etc/skylark/edge.env
+
+# Security
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/var/log/skylark-gps.log /var/lib/skylark/
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=512
+
+# Timeouts
+TimeoutStartSec=30
+TimeoutStopSec=10
+
+[Install]
+WantedBy=multi-user.target

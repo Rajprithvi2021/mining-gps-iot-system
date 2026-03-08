@@ -1,0 +1,53 @@
+## Dependencies
+node_modules/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+pip-log.txt
+pip-delete-this-directory.txt
+
+## Environment (keep .env.example only)
+.env
+.env.local
+.env.*.local
+.env.*.private
+
+## IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+## Build outputs
+dist/
+build/
+*.log
+coverage/
+logs/
+
+## Database
+*.sqlite
+*.sqlite3
+*.db
+
+## OS
+.DS_Store
+Thumbs.db
+
+## Local docs and test files (not needed on GitHub)
+*SESSION*.md
+*PHASE*.md
+*FINAL*.md
+*INTEGRATION*.md
+*TESTING*.md
+verify*/
+test*.js
+test*.ps1
+RUN_*.ps1
