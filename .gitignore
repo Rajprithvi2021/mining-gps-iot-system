@@ -57,6 +57,8 @@ Thumbs.db
 *GUIDE*.md
 *SCRIPT*.md
 verify*/
+verify_system.py
+verify-system.js
 RUN_*.bat
 RUN_*.ps1
 test_*.js
@@ -68,6 +70,7 @@ DETAILED_AUDIT.py
 FUNCTIONALITY_AUDIT.py
 ASSIGNMENT_REQUIREMENTS_AUDIT.py
 mosquitto.conf
+railway.md
 *.txt
 test*.js
 test*.ps1
