@@ -15,6 +15,10 @@ const dashboardRoutes = require('./routes/dashboard');
 const routeRoutes = require('./routes/routes');
 const analyticsRoutes = require('./routes/analytics');
 const reportingRoutes = require('./routes/reports');
+const hardwareRoutes = require('./routes/hardware');
+
+// Import hardware simulator
+const hardwareSimulator = require('./services/hardwareSimulator');
 
 // Initialize Express app
 const app = express();
@@ -63,6 +67,7 @@ app.use('/api/v1/dashboard', dashboardRoutes);
 app.use('/api/v1/routes', routeRoutes);
 app.use('/api/v1/analytics', analyticsRoutes);
 app.use('/api/v1/reports', reportingRoutes);
+app.use('/api/v1/hardware', hardwareRoutes);
 
 // WebSocket connection
 io.on('connection', (socket) => {
@@ -98,9 +103,17 @@ app.use((req, res) => {
 
 // Start server
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
+server.listen(PORT, async () => {
   logger.info(`Mining GPS Backend running on port ${PORT}`);
   logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
+
+  // Initialize hardware simulator (simulates Raspberry Pi, GPS, IoT sensors, MQTT)
+  try {
+    await hardwareSimulator.initialize();
+    logger.info('✅ Hardware Simulator initialized - all vehicles now have simulated hardware');
+  } catch (error) {
+    logger.error('❌ Error initializing hardware simulator:', error);
+  }
 });
 
 // Export for testing

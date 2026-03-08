@@ -5,6 +5,7 @@ import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, Cart
 import { FiMap, FiActivity, FiAlertTriangle, FiTrendingUp, FiZap, FiNavigation, FiTruck, FiDownload } from 'react-icons/fi';
 import { MapContainer } from './components/MapContainer';
 import { VehicleComparison } from './components/VehicleComparison';
+import HardwareStatus from './components/HardwareStatus';
 
 const API_BASE = 'http://localhost:5000/api/v1';
 
@@ -421,6 +422,7 @@ function App() {
             { id: 'map', label: 'Map', icon: '🗺️' },
             { id: 'comparison', label: 'Compare', icon: '⚖️' },
             { id: 'analytics', label: 'Analytics', icon: '📊' },
+            { id: 'hardware', label: 'Hardware', icon: '🤖' },
             { id: 'maintenance', label: 'Maintenance', icon: '🔧' },
             { id: 'engineering', label: 'Engineering', icon: '⚙️' },
             { id: 'deployment', label: 'Deployment', icon: '🚀' }
@@ -1198,93 +1200,16 @@ function App() {
         {/* ANALYTICS TAB */}
         {activeTab === 'analytics' && (
           <div className="space-y-6">
-            {/* Vehicle Comparison Dashboard */}
+            {/* Professional Analytics Dashboard */}
             <VehicleComparison />
+          </div>
+        )}
 
-            {/* Key Metrics */}
-            <div className="grid grid-cols-4 gap-4">
-              {[
-                { label: 'Active Vehicles', value: fleetMetrics?.activeVehicles || 0, color: 'from-green-600 to-green-900' },
-                { label: 'Avg Temperature', value: (fleetMetrics?.avgTemp || 0).toFixed(1) + '°C', color: 'from-orange-600 to-orange-900' },
-                { label: 'Avg Efficiency', value: (fleetMetrics?.efficiencyRating || 0).toFixed(1) + '/10', color: 'from-blue-600 to-blue-900' },
-                { label: 'Total Alerts', value: alerts.length, color: 'from-red-600 to-red-900' }
-              ].map((metric, i) => (
-                <div key={i} className={`bg-gradient-to-br ${metric.color} p-6 rounded-lg border border-opacity-20 border-white transform hover:scale-105 transition-transform`}>
-                  <div className="text-xs opacity-70 uppercase tracking-wider mb-2">{metric.label}</div>
-                  <div className="text-3xl font-bold">{metric.value}</div>
-                </div>
-              ))}
-            </div>
-
-            {/* Charts Grid */}
-            <div className="grid grid-cols-2 gap-6">
-              {/* Vehicle Type Distribution */}
-              <div className={`border rounded-lg p-6 ${theme === 'dark' ? 'border-slate-800 bg-slate-800/30' : 'border-gray-200 bg-gray-100'}`}>
-                <h3 className="text-lg font-bold mb-4">🚗 Fleet by Type</h3>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={getChartData().typeChart}>
-                    <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#444' : '#ddd'} />
-                    <XAxis dataKey="name" stroke={theme === 'dark' ? '#888' : '#666'} style={{fontSize: '12px'}} />
-                    <YAxis stroke={theme === 'dark' ? '#888' : '#666'} />
-                    <Tooltip contentStyle={{backgroundColor: theme === 'dark' ? '#1e293b' : '#fff', border: '1px solid #666'}} />
-                    <Bar dataKey="count" fill="#3b82f6" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-
-              {/* Active vs Idle */}
-              <div className={`border rounded-lg p-6 ${theme === 'dark' ? 'border-slate-800 bg-slate-800/30' : 'border-gray-200 bg-gray-100'}`}>
-                <h3 className="text-lg font-bold mb-4">⚙️ Vehicle Status</h3>
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={[
-                        { name: 'Active', value: fleetMetrics.activeVehicles },
-                        { name: 'Idle', value: fleetMetrics.totalVehicles - fleetMetrics.activeVehicles }
-                      ]}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label
-                      outerRadius={100}
-                      dataKey="value"
-                    >
-                      <Cell fill="#10b981" />
-                      <Cell fill="#6b7280" />
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-
-              {/* Temperature Distribution */}
-              <div className={`border rounded-lg p-6 ${theme === 'dark' ? 'border-slate-800 bg-slate-800/30' : 'border-gray-200 bg-gray-100'}`}>
-                <h3 className="text-lg font-bold mb-4">🌡️ Temperature Levels</h3>
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={getChartData().tempChart}>
-                    <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#444' : '#ddd'} />
-                    <XAxis dataKey="name" stroke={theme === 'dark' ? '#888' : '#666'} style={{fontSize: '10px'}} />
-                    <YAxis stroke={theme === 'dark' ? '#888' : '#666'} />
-                    <Tooltip contentStyle={{backgroundColor: theme === 'dark' ? '#1e293b' : '#fff', border: '1px solid #666'}} />
-                    <Line type="monotone" dataKey="temp" stroke="#f97316" strokeWidth={2} dot={false} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-
-              {/* Fuel Levels */}
-              <div className={`border rounded-lg p-6 ${theme === 'dark' ? 'border-slate-800 bg-slate-800/30' : 'border-gray-200 bg-gray-100'}`}>
-                <h3 className="text-lg font-bold mb-4">⛽ Fuel Levels</h3>
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={getChartData().fuelChart}>
-                    <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#444' : '#ddd'} />
-                    <XAxis dataKey="name" stroke={theme === 'dark' ? '#888' : '#666'} style={{fontSize: '10px'}} />
-                    <YAxis stroke={theme === 'dark' ? '#888' : '#666'} />
-                    <Tooltip contentStyle={{backgroundColor: theme === 'dark' ? '#1e293b' : '#fff', border: '1px solid #666'}} />
-                    <Line type="monotone" dataKey="fuel" stroke="#ec4899" strokeWidth={2} dot={false} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
+        {/* HARDWARE SIMULATOR TAB */}
+        {activeTab === 'hardware' && (
+          <div className="space-y-6">
+            {/* Real Hardware Simulation Dashboard */}
+            <HardwareStatus />
           </div>
         )}
       </main>
