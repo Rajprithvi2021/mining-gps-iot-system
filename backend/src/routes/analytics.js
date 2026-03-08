@@ -8,7 +8,7 @@ const logger = require('../utils/logger');
 // GET /api/v1/analytics - Get detailed vehicle analytics with comparison
 router.get('/', async (req, res) => {
   try {
-    // Get detailed vehicle analytics from PostgreSQL
+    // Get detailed vehicle analytics from PostgreSQL - Using CORRECT column names from vehicles table
     const vehiclesResult = await pool.query(
       `SELECT 
         v.id,
@@ -18,7 +18,7 @@ router.get('/', async (req, res) => {
         v.current_longitude,
         v.current_speed_kmh as speed_kmh,
         v.fuel_percentage,
-        v.temp_celsius,
+        v.temperature,
         v.efficiency_rating,
         v.active,
         v.status,
@@ -28,7 +28,7 @@ router.get('/', async (req, res) => {
        FROM vehicles v
        LEFT JOIN alerts a ON v.id = a.vehicle_id AND a.resolved = false
        GROUP BY v.id, v.name, v.type, v.current_latitude, v.current_longitude, 
-                v.current_speed_kmh, v.fuel_percentage, v.temp_celsius, v.efficiency_rating,
+                v.current_speed_kmh, v.fuel_percentage, v.temperature, v.efficiency_rating,
                 v.active, v.status
        ORDER BY v.id`
     );
@@ -40,18 +40,21 @@ router.get('/', async (req, res) => {
        FROM alerts`
     );
     
-    // Calculate fleet summary
+    // Calculate fleet summary from database
     const vehicles = vehiclesResult.rows;
     const totalVehicles = vehicles.length;
     const activeVehicles = vehicles.filter(v => v.active).length;
     const avgSpeed = vehicles.length > 0 
-      ? (vehicles.reduce((sum, v) => sum + (v.speed_kmh || 0), 0) / vehicles.length).toFixed(2)
+      ? (vehicles.reduce((sum, v) => sum + (parseFloat(v.speed_kmh) || 0), 0) / vehicles.length).toFixed(2)
       : 0;
     const avgEfficiency = vehicles.length > 0
-      ? (vehicles.reduce((sum, v) => sum + (v.efficiency_rating || 0), 0) / vehicles.length).toFixed(2)
+      ? (vehicles.reduce((sum, v) => sum + (parseFloat(v.efficiency_rating) || 0), 0) / vehicles.length).toFixed(2)
       : 0;
     const avgFuelLevel = vehicles.length > 0
-      ? (vehicles.reduce((sum, v) => sum + (v.fuel_percentage || 0), 0) / vehicles.length).toFixed(2)
+      ? (vehicles.reduce((sum, v) => sum + (parseInt(v.fuel_percentage) || 0), 0) / vehicles.length).toFixed(2)
+      : 0;
+    const avgTemp = vehicles.length > 0
+      ? (vehicles.reduce((sum, v) => sum + (parseFloat(v.temperature) || 0), 0) / vehicles.length).toFixed(1)
       : 0;
     
     const alertStats = alertsResult.rows[0];
@@ -65,6 +68,7 @@ router.get('/', async (req, res) => {
           avgSpeed: parseFloat(avgSpeed),
           avgEfficiency: parseFloat(avgEfficiency),
           avgFuelLevel: parseFloat(avgFuelLevel),
+          avgTemperature: parseFloat(avgTemp),
           lastUpdate: new Date().toISOString()
         },
         alerts: {
@@ -76,16 +80,16 @@ router.get('/', async (req, res) => {
           id: v.id,
           name: v.vehicle_name,
           type: v.type,
-          status: v.status,
+          status: v.active ? 'moving' : 'idle',
           active: v.active,
           location: {
-            latitude: parseFloat(v.current_latitude),
-            longitude: parseFloat(v.current_longitude)
+            latitude: parseFloat(v.current_latitude || 0),
+            longitude: parseFloat(v.current_longitude || 0)
           },
           performance: {
             speed_kmh: parseFloat(v.speed_kmh || 0),
             fuel_percentage: parseInt(v.fuel_percentage || 0),
-            temperature_celsius: parseFloat(v.temp_celsius || 0),
+            temperature_celsius: parseFloat(v.temperature || 0),
             efficiency_rating: parseFloat(v.efficiency_rating || 0)
           },
           alerts: {
@@ -255,23 +259,27 @@ function calculateHealthScore(vehicle) {
   let score = 100;
   
   // Fuel level (target: 40-80%)
-  if (vehicle.fuel_percentage < 20) score -= 30;
-  else if (vehicle.fuel_percentage < 40) score -= 15;
-  else if (vehicle.fuel_percentage > 95) score -= 5;
+  const fuel = parseInt(vehicle.fuel_percentage) || 0;
+  if (fuel < 20) score -= 30;
+  else if (fuel < 40) score -= 15;
+  else if (fuel > 95) score -= 5;
   
   // Efficiency (target: 7-10 km/L)
-  if (vehicle.efficiency_rating < 6) score -= 25;
-  else if (vehicle.efficiency_rating < 7) score -= 15;
-  else if (vehicle.efficiency_rating > 12) score -= 5;
+  const efficiency = parseFloat(vehicle.efficiency_rating) || 0;
+  if (efficiency < 6) score -= 25;
+  else if (efficiency < 7) score -= 15;
+  else if (efficiency > 12) score -= 5;
   
   // Speed (target: under 80 km/h)
-  if (vehicle.speed_kmh > 100) score -= 20;
-  else if (vehicle.speed_kmh > 90) score -= 10;
+  const speed = parseFloat(vehicle.speed_kmh) || 0;
+  if (speed > 100) score -= 20;
+  else if (speed > 90) score -= 10;
   
   // Temperature (optimal: 60-90°C)
-  if (vehicle.temp_celsius > 100) score -= 25;
-  else if (vehicle.temp_celsius > 95) score -= 15;
-  else if (vehicle.temp_celsius < 50) score -= 10;
+  const temp = parseFloat(vehicle.temperature) || 0;
+  if (temp > 100) score -= 25;
+  else if (temp > 95) score -= 15;
+  else if (temp < 50) score -= 10;
   
   // Alerts
   score -= (vehicle.critical_alerts || 0) * 20;

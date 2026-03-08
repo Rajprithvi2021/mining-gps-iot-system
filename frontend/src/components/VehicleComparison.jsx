@@ -16,15 +16,20 @@ export function VehicleComparison() {
         const response = await fetch(`${API_BASE}/api/v1/analytics`);
         if (response.ok) {
           const data = await response.json();
-          console.log('Analytics data:', data);
+          console.log('🔍 Analytics API Response:', data);
           
-          if (data.data) {
+          if (data.success && data.data) {
+            console.log(`✅ Received ${data.data.vehicle_comparison?.length || 0} vehicles from database`);
             setFleetSummary(data.data.fleet_summary);
             setVehicles(data.data.vehicle_comparison || []);
+          } else {
+            console.error('❌ Invalid response structure:', data);
           }
+        } else {
+          console.error('❌ API Error:', response.status, await response.text());
         }
       } catch (error) {
-        console.error('Error fetching analytics:', error);
+        console.error('❌ Error fetching analytics:', error);
       } finally {
         setLoading(false);
       }
