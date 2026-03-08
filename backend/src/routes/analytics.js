@@ -21,7 +21,6 @@ router.get('/', async (req, res) => {
         v.temperature,
         v.efficiency_rating,
         v.active,
-        v.status,
         COUNT(CASE WHEN a.severity = 'critical' THEN 1 END) as critical_alerts,
         COUNT(CASE WHEN a.severity = 'high' THEN 1 END) as high_alerts,
         COUNT(a.id) as total_alerts
@@ -29,7 +28,7 @@ router.get('/', async (req, res) => {
        LEFT JOIN alerts a ON v.id = a.vehicle_id AND a.resolved = false
        GROUP BY v.id, v.name, v.type, v.current_latitude, v.current_longitude, 
                 v.current_speed_kmh, v.fuel_percentage, v.temperature, v.efficiency_rating,
-                v.active, v.status
+                v.active
        ORDER BY v.id`
     );
     
