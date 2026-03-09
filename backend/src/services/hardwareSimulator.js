@@ -307,7 +307,7 @@ class HardwareSimulator {
           current_latitude = $1,
           current_longitude = $2,
           current_speed_kmh = $3,
-          fuel_percentage = $4,
+          fuel_percentage = ROUND($4)::INTEGER,
           temperature = $5,
           updated_at = NOW()
         WHERE id = $6`,

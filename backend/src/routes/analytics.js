@@ -12,6 +12,7 @@ router.get('/', async (req, res) => {
     const vehiclesResult = await pool.query(
       `SELECT 
         v.id,
+        v.vehicle_id,
         v.name as vehicle_name,
         v.type,
         v.current_latitude,
@@ -25,8 +26,8 @@ router.get('/', async (req, res) => {
         COUNT(CASE WHEN a.severity = 'high' THEN 1 END) as high_alerts,
         COUNT(a.id) as total_alerts
        FROM vehicles v
-       LEFT JOIN alerts a ON v.id = a.vehicle_id AND a.resolved = false
-       GROUP BY v.id, v.name, v.type, v.current_latitude, v.current_longitude, 
+       LEFT JOIN alerts a ON v.vehicle_id = a.vehicle_id AND a.resolved = false
+       GROUP BY v.id, v.vehicle_id, v.name, v.type, v.current_latitude, v.current_longitude, 
                 v.current_speed_kmh, v.fuel_percentage, v.temperature, v.efficiency_rating,
                 v.active
        ORDER BY v.id`
